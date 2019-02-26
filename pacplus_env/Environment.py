@@ -3,6 +3,11 @@ from MAMEToolkit.emulator.Address import Address
 from pacplus_env.Steps import *
 from pacplus_env.Actions import Actions
 
+# Combines the data of multiple time steps
+def add_rewards(old_data, new_data):
+    new_data["reward"] += old_data["reward"]
+    return new_data
+
 # Returns the list of memory addresses required to train on Pac-Man Plus
 def setup_memory_addresses():
     return {
@@ -76,9 +81,10 @@ class Environment(object):
     # Collects the specified amount of frames the agent requires before choosing an action
     def gather_frames(self, actions):
         data = self.sub_step(actions)
-        frames = [data["frame"]]
+        frames = [data["frame"].flatten().reshape(288, 224, 3)[23:-15,:,:]]
         for i in range(self.frames_per_step - 1):
-            frames.append(data["frame"])
+            data = add_rewards(data, self.sub_step(actions))
+            frames.append(data["frame"].flatten().reshape(288, 224, 3)[23:-15,:,:])
         data["frame"] = frames[0] if self.frames_per_step == 1 else frames
         return data
 
